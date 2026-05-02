@@ -222,8 +222,15 @@ function safeDivide(numerator, denominator) {
 }
 
 function renderLeaderboard() {
-  const ranked = [...submissions].sort((a, b) => b.score - a.score || b.prAuc - a.prAuc);
-  const topScore = ranked[0]?.score || 1;
+  const ranked = [...submissions].sort(
+    (a, b) =>
+      (b.accuracy ?? 0) - (a.accuracy ?? 0) ||
+      b.prAuc - a.prAuc ||
+      b.precision - a.precision ||
+      b.recall - a.recall ||
+      b.score - a.score,
+  );
+  const topAccuracy = ranked[0]?.accuracy || 1;
 
   rankingList.replaceChildren();
   emptyState.hidden = ranked.length > 0;
@@ -233,8 +240,8 @@ function renderLeaderboard() {
     const row = template.content.firstElementChild.cloneNode(true);
     row.querySelector(".rank-number").textContent = `#${index + 1}`;
     row.querySelector(".rank-name").textContent = submission.name;
-    row.querySelector(".rank-score").textContent = `综合分 ${formatMetric(submission.score)}`;
-    row.querySelector(".bar-fill").style.width = `${Math.max(5, (submission.score / topScore) * 100)}%`;
+    row.querySelector(".rank-score").textContent = `Accuracy ${formatMetric(submission.accuracy ?? 0)}`;
+    row.querySelector(".bar-fill").style.width = `${Math.max(5, ((submission.accuracy ?? 0) / topAccuracy) * 100)}%`;
     row.querySelector(".metric-accuracy").textContent = formatMetric(submission.accuracy ?? 0);
     row.querySelector(".metric-prauc").textContent = formatMetric(submission.prAuc);
     row.querySelector(".metric-precision").textContent = formatMetric(submission.precision);
