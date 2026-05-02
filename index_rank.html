@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>预测效果排行榜</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Prediction Leaderboard</p>
+          <h1 id="page-title">预测效果排名</h1>
+          <p class="intro">
+            上传测试集答案和预测结果，自动计算 Accuracy、Precision、Recall 和 PR-AUC，并按Accuracy更新排行榜。
+          </p>
+        </div>
+        <div class="hero-panel" aria-label="当前排行榜摘要">
+          <span class="panel-label">当前提交</span>
+          <strong id="submissionCount">0</strong>
+          <span>条结果</span>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="上传与排行榜">
+        <form id="uploadForm" class="upload-card">
+          <div class="section-heading">
+            <p class="eyebrow">Upload</p>
+            <h2>添加一次预测结果</h2>
+          </div>
+
+          <label class="field">
+            <span>学生名字</span>
+            <input id="studentName" name="studentName" type="text" placeholder="例如：张三" autocomplete="off" required />
+          </label>
+
+          <label class="file-field" for="truthFile">
+            <input id="truthFile" name="truthFile" type="file" accept=".csv,.tsv,.txt" required />
+            <span class="file-title">测试集正确答案</span>
+            <span class="file-help">默认最后一栏为 target，值为 0 或 1</span>
+            <strong id="truthFileName">选择文件</strong>
+          </label>
+
+          <label class="file-field" for="predictionFile">
+            <input id="predictionFile" name="predictionFile" type="file" accept=".csv,.tsv,.txt" required />
+            <span class="file-title">测试集预测结果</span>
+            <span class="file-help">默认最后一栏为 predicted values，可为 0/1 或概率</span>
+            <strong id="predictionFileName">选择文件</strong>
+          </label>
+
+          <button class="primary-button" type="submit">计算并加入排行榜</button>
+          <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
+        </form>
+
+        <section class="leaderboard" aria-labelledby="leaderboard-title">
+          <div class="leaderboard-top">
+            <div>
+              <p class="eyebrow">Ranking</p>
+              <h2 id="leaderboard-title">Leaderboard</h2>
+            </div>
+            <button id="clearButton" class="ghost-button" type="button">清空</button>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <strong>暂无提交</strong>
+            <span>上传答案文件和预测文件后，排名会立即显示在这里。</span>
+          </div>
+
+          <div id="rankingList" class="ranking-list" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="rankingTemplate">
+      <article class="rank-row">
+        <div class="rank-meta">
+          <span class="rank-number"></span>
+          <div>
+            <h3 class="rank-name"></h3>
+            <p class="rank-score"></p>
+          </div>
+        </div>
+        <div class="bar-track" aria-hidden="true">
+          <span class="bar-fill"></span>
+        </div>
+        <dl class="metric-grid">
+          <div>
+            <dt>Accuracy</dt>
+            <dd class="metric-accuracy"></dd>
+          </div>
+          <div>
+            <dt>Precision</dt>
+            <dd class="metric-precision"></dd>
+          </div>
+          <div>
+            <dt>Recall</dt>
+            <dd class="metric-recall"></dd>
+          </div>
+          <div>
+            <dt>PR-AUC</dt>
+            <dd class="metric-prauc"></dd>
+          </div>
+        </dl>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
