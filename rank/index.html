@@ -1,110 +1,488 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>预测效果排行榜</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="shell">
-      <section class="hero" aria-labelledby="page-title">
-        <div>
-          <p class="eyebrow">Prediction Leaderboard</p>
-          <h1 id="page-title">预测效果排名</h1>
-          <p class="intro">
-            上传测试集答案和预测结果，自动计算 Accuracy、Precision、Recall 和 PR-AUC，并按Accuracy更新排行榜。
-          </p>
-        </div>
-        <div class="hero-panel" aria-label="当前排行榜摘要">
-          <span class="panel-label">当前提交</span>
-          <strong id="submissionCount">0</strong>
-          <span>条结果</span>
-        </div>
-      </section>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>排名榜单 - 预测排行榜</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-secondary: #555;
+            --gold: #e6b422;
+            -<answer tablet 拉高-normal，纵向阅读时保持完整视图>
+            --silver: #a8b8c8;
+            --bronze: #c49a6c;
+            --accent: #4f6ef7;
+            --accent-light: #eef1ff;
+            --bar-bg: #e8ecf1;
+            --border: #e2e6ea;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.10);
+            --radius: 14px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-      <section class="workspace" aria-label="上传与排行榜">
-        <form id="uploadForm" class="upload-card">
-          <div class="section-heading">
-            <p class="eyebrow">Upload</p>
-            <h2>添加一次预测结果</h2>
-          </div>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-          <label class="field">
-            <span>学生名字</span>
-            <input id="studentName" name="studentName" type="text" placeholder="例如：张三" autocomplete="off" required />
-          </label>
+        body {
+            font-family: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(160deg, #e8edf5 0%, #f0f2f5 30%, #f7f8fa 60%, #eef1f8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 16px 60px;
+            -webkit-font-smoothing: antialiased;
+        }
 
-          <label class="file-field" for="truthFile">
-            <input id="truthFile" name="truthFile" type="file" accept=".csv,.tsv,.txt" required />
-            <span class="file-title">测试集正确答案</span>
-            <span class="file-help">默认最后一栏为 target，值为 0 或 1</span>
-            <strong id="truthFileName">选择文件</strong>
-          </label>
+        .container {
+            width: 100%;
+            max-width: 1050px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
 
-          <label class="file-field" for="predictionFile">
-            <input id="predictionFile" name="predictionFile" type="file" accept=".csv,.tsv,.txt" required />
-            <span class="file-title">测试集预测结果</span>
-            <span class="file-help">默认最后一栏为 predicted values，可为 0/1 或概率</span>
-            <strong id="predictionFileName">选择文件</strong>
-          </label>
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 32px 36px 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: -40px;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.04em;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 6px;
+        }
+        .header .subtitle {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+            letter-spacing: 0.03em;
+            position: relative;
+            z-index: 1;
+        }
+        .header .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+        .header .metric-badge {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(4px);
+            transition: var(--transition);
+        }
+        .header .metric-badge:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
 
-          <button class="primary-button" type="submit">计算并加入排行榜</button>
-          <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
-        </form>
+        /* Table wrapper */
+        .table-wrapper {
+            padding: 20px 24px 28px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
-        <section class="leaderboard" aria-labelledby="leaderboard-title">
-          <div class="leaderboard-top">
-            <div>
-              <p class="eyebrow">Ranking</p>
-              <h2 id="leaderboard-title">Leaderboard</h2>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+            font-size: 0.95rem;
+        }
+
+        thead th {
+            background: #f8f9fb;
+            padding: 15px 14px;
+            text-align: center;
+            font-weight: 650;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5a6270;
+            border-bottom: 2px solid #e2e6ea;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        thead th:first-child {
+            text-align: center;
+            width: 50px;
+            border-radius: 10px 0 0 0;
+        }
+        thead th:nth-child(2) {
+            text-align: left;
+            padding-left: 8px;
+        }
+        thead th:last-child {
+            border-radius: 0 10px 0 0;
+        }
+
+        tbody tr {
+            transition: var(--transition);
+            border-bottom: 1px solid #f0f2f5;
+        }
+        tbody tr:hover {
+            background: #fafbfd;
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+            position: relative;
+            z-index: 1;
+            border-radius: 10px;
+            outline: 1px solid #e8ecf5;
+        }
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody td {
+            padding: 15px 14px;
+            text-align: center;
+            vertical-align: middle;
+            transition: var(--transition);
+        }
+        tbody td.rank-cell {
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 50px;
+        }
+        tbody td.name-cell {
+            text-align: left;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+            letter-spacing: 0.02em;
+            padding-left: 8px;
+            white-space: nowrap;
+        }
+
+        /* Rank medals */
+        .rank-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .rank-1 {
+            background: linear-gradient(135deg, #f9c74f 0%, #e6b422 100%);
+            box-shadow: 0 3px 10px rgba(230, 180, 34, 0.45);
+            font-size: 1.2rem;
+        }
+        .rank-2 {
+            background: linear-gradient(135deg, #c0cfde 0%, #a8b8c8 100%);
+            box-shadow: 0 3px 10px rgba(168, 184, 200, 0.4);
+            font-size: 1.2rem;
+        }
+        .rank-3 {
+            background: linear-gradient(135deg, #d4a87c 0%, #c49a6c 100%);
+            box-shadow: 0 3px 10px rgba(196, 154, 108, 0.4);
+            font-size: 1.2rem;
+        }
+        .rank-other {
+            background: #dde1e8;
+            color: #5a6270;
+            box-shadow: none;
+            font-size: 0.95rem;
+        }
+
+        /* Metric values */
+        .metric-value {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            display: block;
+        }
+        .metric-bar-wrap {
+            display: inline-block;
+            width: 70px;
+            height: 6px;
+            background: var(--bar-bg);
+            border-radius: 10px;
+            margin-top: 4px;
+            overflow: hidden;
+            vertical-align: middle;
+        }
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .bar-accuracy {
+            background: linear-gradient(90deg, #4f6ef7, #6c8cff);
+        }
+        .bar-precision {
+            background: linear-gradient(90deg, #3da5d9, #5cc0f0);
+        }
+        .bar-recall {
+            background: linear-gradient(90deg, #2ec4a7, #4dd9bf);
+        }
+        .bar-prauc {
+            background: linear-gradient(90deg, #f0865a, #f5a67a);
+        }
+
+        /* Highlight best in column */
+        .best-in-col {
+            position: relative;
+        }
+        .best-in-col .metric-value {
+            color: #0f3460;
+            font-weight: 750;
+        }
+        .best-star {
+            display: inline-block;
+            color: #e6b422;
+            font-size: 0.7rem;
+            margin-left: 2px;
+            vertical-align: super;
+        }
+
+        /* Footer note */
+        .footer-note {
+            text-align: center;
+            padding: 16px 24px 22px;
+            color: #8899aa;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+            border-top: 1px solid #f0f2f5;
+        }
+        .footer-note span {
+            color: #4f6ef7;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 24px 18px 20px;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .table-wrapper {
+                padding: 12px 8px 20px;
+            }
+            table {
+                min-width: 600px;
+                font-size: 0.82rem;
+            }
+            thead th {
+                padding: 10px 6px;
+                font-size: 0.7rem;
+            }
+            tbody td {
+                padding: 10px 6px;
+            }
+            .metric-bar-wrap {
+                width: 50px;
+            }
+            .rank-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 0.85rem;
+            }
+            .rank-1,
+            .rank-2,
+            .rank-3 {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏆 数据挑战赛排行榜</h1>
+            <p class="subtitle">综合评价指标排名 · Top 10</p>
+            <div class="badge-row">
+                <span class="metric-badge">📊 Accuracy</span>
+                <span class="metric-badge">🎯 Precision</span>
+                <span class="metric-badge">🔄 Recall</span>
+                <span class="metric-badge">📈 PR-AUC</span>
             </div>
-            <button id="clearButton" class="ghost-button" type="button">清空</button>
-          </div>
-
-          <div id="emptyState" class="empty-state">
-            <strong>暂无提交</strong>
-            <span>上传答案文件和预测文件后，排名会立即显示在这里。</span>
-          </div>
-
-          <div id="rankingList" class="ranking-list" aria-live="polite"></div>
-        </section>
-      </section>
-    </main>
-
-    <template id="rankingTemplate">
-      <article class="rank-row">
-        <div class="rank-meta">
-          <span class="rank-number"></span>
-          <div>
-            <h3 class="rank-name"></h3>
-            <p class="rank-score"></p>
-          </div>
         </div>
-        <div class="bar-track" aria-hidden="true">
-          <span class="bar-fill"></span>
-        </div>
-        <dl class="metric-grid">
-          <div>
-            <dt>Accuracy</dt>
-            <dd class="metric-accuracy"></dd>
-          </div>
-          <div>
-            <dt>Precision</dt>
-            <dd class="metric-precision"></dd>
-          </div>
-          <div>
-            <dt>Recall</dt>
-            <dd class="metric-recall"></dd>
-          </div>
-          <div>
-            <dt>PR-AUC</dt>
-            <dd class="metric-prauc"></dd>
-          </div>
-        </dl>
-      </article>
-    </template>
 
-    <script src="app.js"></script>
-  </body>
+        <!-- Table -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>姓名</th>
+                        <th>Accuracy</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>PR-AUC</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- JavaScript 动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-note">
+            数据更新时间：<span>2026-05-02</span> &nbsp;|&nbsp;
+            排名依据 <span>Accuracy</span> 降序 &nbsp;|&nbsp;
+            🟡 金色星标表示该列最优值
+        </div>
+    </div>
+
+    <script>
+        // 原始数据（按 Accuracy 降序排列）
+        const data = [
+            { name: "ZHANG Li", accuracy: 0.690, precision: 0.690, recall: 0.820, prAuc: 0.591 },
+            { name: "RUAN Jinglei", accuracy: 0.687, precision: 0.687, recall: 0.810, prAuc: 0.738 },
+            { name: "YE Yanliang", accuracy: 0.684, precision: 0.684, recall: 0.827, prAuc: 0.586 },
+            { name: "MU Guanwei", accuracy: 0.682, precision: 0.682, recall: 0.838, prAuc: 0.356 },
+            { name: "WU Xuan", accuracy: 0.677, precision: 0.677, recall: 0.633, prAuc: 0.568 },
+            { name: "ZHONG Hui", accuracy: 0.675, precision: 0.675, recall: 0.729, prAuc: 0.568 },
+            { name: "LU Hongxia", accuracy: 0.674, precision: 0.674, recall: 0.847, prAuc: 0.579 },
+            { name: "KONG Ximing", accuracy: 0.672, precision: 0.672, recall: 0.632, prAuc: 0.631 },
+            { name: "DU Haoju", accuracy: 0.648, precision: 0.648, recall: 0.887, prAuc: 0.552 },
+            { name: "HU Mengting", accuracy: 0.624, precision: 0.624, recall: 0.796, prAuc: 0.519 }
+        ];
+
+        // 找出每列最大值
+        const maxAccuracy = Math.max(...data.map(d => d.accuracy));
+        const maxPrecision = Math.max(...data.map(d => d.precision));
+        const maxRecall = Math.max(...data.map(d => d.recall));
+        const maxPrAuc = Math.max(...data.map(d => d.prAuc));
+
+        // 获取排名图标类名
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-other';
+        }
+
+        // 获取排名图标文字
+        function getRankIcon(rank) {
+            if (rank === 1) return '🥇';
+            if (rank === 2) return '🥈';
+            if (rank === 3) return '🥉';
+            return rank;
+        }
+
+        // 生成条形图宽度百分比（基于该列最大值）
+        function getBarWidth(value, max) {
+            return Math.round((value / max) * 100);
+        }
+
+        // 判断是否为该列最大值
+        function isBest(value, max) {
+            return Math.abs(value - max) < 0.0001;
+        }
+
+        // 构建表格行
+        function buildTableBody() {
+            const tbody = document.getElementById('table-body');
+            let html = '';
+
+            data.forEach((person, index) => {
+                const rank = index + 1;
+                const rankClass = getRankClass(rank);
+                const rankIcon = getRankIcon(rank);
+
+                const accBest = isBest(person.accuracy, maxAccuracy);
+                const precBest = isBest(person.precision, maxPrecision);
+                const recBest = isBest(person.recall, maxRecall);
+                const praucBest = isBest(person.prAuc, maxPrAuc);
+
+                html += `
+                    <tr>
+                        <td class="rank-cell">
+                            <span class="rank-icon ${rankClass}">${rankIcon}</span>
+                        </td>
+                        <td class="name-cell">${person.name}</td>
+                        <td class="${accBest ? 'best-in-col' : ''}">
+                            <span class="metric-value">${person.accuracy.toFixed(3)}${accBest ? '<span class="best-star" title="最优">★</span>' : ''}</span>
+                            <div class="metric-bar-wrap">
+                                <div class="metric-bar-fill bar-accuracy" style="width:${getBarWidth(person.accuracy, maxAccuracy)}%;"></div>
+                            </div>
+                        </td>
+                        <td class="${precBest ? 'best-in-col' : ''}">
+                            <span class="metric-value">${person.precision.toFixed(3)}${precBest ? '<span class="best-star" title="最优">★</span>' : ''}</span>
+                            <div class="metric-bar-wrap">
+                                <div class="metric-bar-fill bar-precision" style="width:${getBarWidth(person.precision, maxPrecision)}%;"></div>
+                            </div>
+                        </td>
+                        <td class="${recBest ? 'best-in-col' : ''}">
+                            <span class="metric-value">${person.recall.toFixed(3)}${recBest ? '<span class="best-star" title="最优">★</span>' : ''}</span>
+                            <div class="metric-bar-wrap">
+                                <div class="metric-bar-fill bar-recall" style="width:${getBarWidth(person.recall, maxRecall)}%;"></div>
+                            </div>
+                        </td>
+                        <td class="${praucBest ? 'best-in-col' : ''}">
+                            <span class="metric-value">${person.prAuc.toFixed(3)}${praucBest ? '<span class="best-star" title="最优">★</span>' : ''}</span>
+                            <div class="metric-bar-wrap">
+                                <div class="metric-bar-fill bar-prauc" style="width:${getBarWidth(person.prAuc, maxPrAuc)}%;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // 页面加载完成后构建表格
+        document.addEventListener('DOMContentLoaded', buildTableBody);
+    </script>
+</body>
 </html>
